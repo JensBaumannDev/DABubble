@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-profile-menu',
@@ -10,6 +11,9 @@ import { Router } from '@angular/router';
 })
 export class ProfileMenuComponent {
   private router = inject(Router);
+  private authService = inject(AuthService);
+  
+  currentUserProfile = this.authService.currentUserProfile;
   isOpen = false;
   isClosing = false;
 
@@ -57,8 +61,9 @@ export class ProfileMenuComponent {
     this.closeMenu();
   }
 
-  logout() {
+  async logout() {
     this.closeMenu();
+    await this.authService.logout();
     this.router.navigate(['/login']);
   }
 }
