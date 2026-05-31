@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { supabaseService } from './supabase.service';
 import { AuthResponse, User } from '@supabase/supabase-js';
+import { User as UserProfile } from '../interfaces/user.interface';
 
 @Injectable({
     providedIn: 'root'
@@ -8,18 +9,35 @@ import { AuthResponse, User } from '@supabase/supabase-js';
 export class AuthService {
     private supabaseSvc = inject(supabaseService);
     private currentUserSignal = signal<User | null>(null);
+    private currentUserProfileSignal = signal<UserProfile | null>(null);
 
     readonly currentUser = this.currentUserSignal.asReadonly();
+    readonly currentUserProfile = this.currentUserProfileSignal.asReadonly();
     readonly isAuthenticated = computed(() => this.currentUserSignal() !== null);
 
     constructor() {
         this.supabaseSvc.supabase.auth.getSession().then(({ data }) => {
-            this.currentUserSignal.set(data.session?.user ?? null);
+            this.handleUserChange(data.session?.user ?? null);
         });
-
         this.supabaseSvc.supabase.auth.onAuthStateChange((_event, session) => {
-            this.currentUserSignal.set(session?.user ?? null);
+            this.handleUserChange(session?.user ?? null);
         });
+    }
+
+    private handleUserChange(user: User | null) {
+        this.currentUserSignal.set(user);
+        this.loadUserProfile(user);
+    }
+
+    private async loadUserProfile(user: User | null) {
+        if (!user) return this.currentUserProfileSignal.set(null);
+        const { data, error } = await this.supabaseSvc.supabase
+            .from('profiles').select('*').eq('id', user.id).single();
+        if (error) {
+            console.error('Error loading profile:', error);
+            return this.currentUserProfileSignal.set(null);
+        }
+        this.currentUserProfileSignal.set(data as UserProfile);
     }
 
     async loginWithEmail(email: string, password: string): Promise<AuthResponse> {
@@ -45,19 +63,10 @@ export class AuthService {
     }
 
     async signup(name: string, email: string, password: string): Promise<{ error: any, data: any }> {
-        const { data, error } = await this.supabaseSvc.supabase.auth.signUp({
-            email,
-            password
-        });
-
-        if (error || !data.user) {
-            return { error, data };
-        }
-
+        const { data, error } = await this.supabaseSvc.supabase.auth.signUp({ email, password });
+        if (error || !data.user) return { error, data };
         const { error: profileError } = await this.supabaseSvc.supabase
-            .from('profiles')
-            .upsert({ id: data.user.id, display_name: name, email });
-
+            .from('profiles').upsert({ id: data.user.id, display_name: name, email });
         return { error: error || profileError, data };
     }
 

@@ -53,9 +53,13 @@
   right: 0;
   width: 14px;
   height: 14px;
-  background-color: var(--online-green);
+  background-color: var(--text-gray);
   border: 2px solid var(--white);
   border-radius: 50%;
+
+  &--online {
+    background-color: var(--online-green);
+  }
 }
 
 .profile-menu-arrow {
