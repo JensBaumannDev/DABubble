@@ -7,6 +7,7 @@ import { MainComponent } from './pages/main/main';
 import { Signup } from './pages/signup/signup';
 import { ChooseAvatar } from './pages/choose-avatar/choose-avatar';
 import { ForgotPassword } from './pages/forgot-password/forgot-password';
+import { PasswordReset } from './pages/password-reset/password-reset';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'intro', pathMatch: 'full' },
@@ -18,4 +19,5 @@ export const routes: Routes = [
   { path: 'signup', component: Signup },
   { path: 'choose-avatar', component: ChooseAvatar },
   { path: 'forgot-password', component: ForgotPassword },
+  { path: 'password-reset', component: PasswordReset },
 ];

@@ -203,7 +203,21 @@ export class AuthService {
   }
 
   async requestPasswordReset(email: string): Promise<{ error: unknown }> {
-    const { error } = await this.supabaseSvc.supabase.auth.resetPasswordForEmail(email);
+    const redirectTo = typeof window === 'undefined'
+      ? undefined
+      : `${window.location.origin}/password-reset`;
+
+    const { error } = await this.supabaseSvc.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'http://localhost:4200/password-reset',
+    });
+
+    return { error };
+  }
+
+  async updatePassword(password: string): Promise<{ error: unknown }> {
+    const { error } = await this.supabaseSvc.supabase.auth.updateUser({
+      password,
+    });
 
     return { error };
   }
