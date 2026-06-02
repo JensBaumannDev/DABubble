@@ -25,6 +25,30 @@ export class ChooseAvatar {
   loading = signal(false);
   private signupData: SignupData | null = null;
 
+  selectedAvatar = signal('img/avatars/avatar_default.svg');
+  private readonly defaultAvatar = 'img/avatars/avatar_default.svg';
+
+  get avatarSelected(): boolean {
+    return this.selectedAvatar() !== this.defaultAvatar;
+  }
+
+  readonly avatars = [
+    'img/avatars/avatar_female_1.svg',
+    'img/avatars/avatar_female_2.svg',
+    'img/avatars/avatar_male_1.svg',
+    'img/avatars/avatar_male_2.svg',
+    'img/avatars/avatar_male_3.svg',
+    'img/avatars/avatar_male_4.svg',
+  ];
+
+  get userName(): string {
+    return this.signupData?.name ?? '';
+  }
+
+  selectAvatar(src: string): void {
+    this.selectedAvatar.set(src);
+  }
+
   constructor() {
     const state = history.state?.signupData as Partial<SignupData> | undefined;
 
@@ -50,7 +74,7 @@ export class ChooseAvatar {
 
     this.loading.set(true);
     const { name, email, password } = this.signupData;
-    const { error } = await this.authService.signup(name, email, password);
+    const { error } = await this.authService.signup(name, email, password, this.selectedAvatar());
     this.loading.set(false);
 
     if (error) {
