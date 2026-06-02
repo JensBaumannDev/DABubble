@@ -1,15 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HeaderComponent } from '../../components/header/header';
 import { FooterComponent } from '../../components/footer/footer';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
-
-type SignupData = {
-  name: string;
-  email: string;
-  password: string;
-};
+import { SignupData, SignupStateService } from '../../services/signup-state.service';
 
 @Component({
   selector: 'app-choose-avatar',
@@ -19,19 +14,18 @@ type SignupData = {
 })
 export class ChooseAvatar {
   private readonly loginRedirectDelay = 1800;
+  private readonly existingUserErrorCodes = new Set(['user_already_exists']);
   private router = inject(Router);
   private authService = inject(AuthService);
   private toast = inject(ToastService);
+  private signupState = inject(SignupStateService);
 
   loading = signal(false);
   private signupData: SignupData | null = null;
 
   selectedAvatar = signal('img/avatars/avatar_default.svg');
   private readonly defaultAvatar = 'img/avatars/avatar_default.svg';
-
-  get avatarSelected(): boolean {
-    return this.selectedAvatar() !== this.defaultAvatar;
-  }
+  readonly avatarSelected = computed(() => this.selectedAvatar() !== this.defaultAvatar);
 
   readonly avatars = [
     'img/avatars/avatar_female_1.svg',
@@ -51,14 +45,11 @@ export class ChooseAvatar {
   }
 
   constructor() {
-    const state = history.state?.signupData as Partial<SignupData> | undefined;
+    const cachedState = this.signupState.signupData();
 
-    if (state?.name && state?.email && state?.password) {
-      this.signupData = {
-        name: state.name,
-        email: state.email,
-        password: state.password,
-      };
+    if (cachedState) {
+      this.signupData = cachedState;
+      this.applyGoogleAvatarDefault();
       return;
     }
 
@@ -80,12 +71,7 @@ export class ChooseAvatar {
     this.loading.set(false);
 
     if (error) {
-      const isExisting =
-        error.code === 'user_already_exists' ||
-        error.message?.toLowerCase().includes('already registered') ||
-        error.message?.toLowerCase().includes('already been registered') ||
-        error.message?.toLowerCase().includes('email address is already') ||
-        error.status === 422;
+      const isExisting = this.isExistingUserError(error);
       const msg = isExisting
         ? 'Benutzer ist bereits registriert.'
         : 'Registrierung fehlgeschlagen.';
@@ -93,7 +79,37 @@ export class ChooseAvatar {
       return;
     }
 
+    this.signupState.clearSignupData();
     this.toast.show('Konto erfolgreich erstellt!', 'success', this.loginRedirectDelay);
     window.setTimeout(() => this.router.navigate(['/login']), this.loginRedirectDelay);
+  }
+
+  private applyGoogleAvatarDefault(): void {
+    const profileAvatar = this.authService.currentUserProfile()?.avatar_url?.trim();
+    if (profileAvatar) {
+      this.selectedAvatar.set(profileAvatar);
+      return;
+    }
+
+    const metadata = this.authService.currentUser()?.user_metadata;
+    const metadataAvatar = metadata?.['avatar_url'] ?? metadata?.['picture'] ?? metadata?.['picture_url'];
+    if (typeof metadataAvatar === 'string' && metadataAvatar.trim().length > 0) {
+      this.selectedAvatar.set(metadataAvatar);
+    }
+  }
+
+  private isExistingUserError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    const errorRecord = error as Record<string, unknown>;
+    const errorCode = errorRecord['code'];
+    const errorStatus = errorRecord['status'];
+
+    return (
+      (typeof errorCode === 'string' && this.existingUserErrorCodes.has(errorCode)) ||
+      errorStatus === 422
+    );
   }
 }

@@ -64,20 +64,28 @@ main {
     @include flex(row, wrap, flex-start, center);
     gap: 8px;
 
-    img {
-      width: 70px;
-      height: 70px;
+    .avatar-option {
+      border: none;
+      background: transparent;
+      padding: 0;
       border-radius: 50%;
       cursor: pointer;
-      object-fit: cover;
+      line-height: 0;
 
       &.selected {
         outline: 4px solid $bg-color;
       }
 
-      &:hover{
+      &:hover, :focus-visible{
         outline: 4px solid #E6E6E6;
       }
+    }
+
+    .avatar-option img {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
     }
   }
 }
