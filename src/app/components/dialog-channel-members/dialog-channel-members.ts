@@ -43,27 +43,22 @@ export class DialogChannelMembersComponent implements OnInit {
 
   view: 'members' | 'add' = 'members';
 
-  
   isUserOnline(member: ChannelMember): boolean {
     return this.authSvc.onlineUserIds().has(member.id);
   }
 
-  
   ngOnInit() {
     this.view = this.initialView;
   }
 
-  
   onClose() {
     this.close.emit();
   }
 
-  
   onAddMember() {
     this.view = 'add';
   }
 
-  
   onAddMemberClosed(result?: any) {
     if (result) {
       this.addMember.emit(result);

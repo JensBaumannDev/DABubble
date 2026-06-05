@@ -144,7 +144,6 @@ export class AuthService {
       }
       return newProfile as UserProfile;
     }
-
     
     this.supabaseSvc.supabase
       .from('profiles')
@@ -341,6 +340,32 @@ export class AuthService {
   async logout(): Promise<void> {
     await this.cleanupPresence();
     await this.supabaseSvc.supabase.auth.signOut();
+  }
+
+  async deleteCurrentUserAccount(): Promise<boolean> {
+    const currentUser = this.currentUser();
+
+    if (!currentUser) {
+      return false;
+    }
+
+    const { error } = await this.supabaseSvc.supabase.functions.invoke('delete-account');
+
+    if (error) {
+      console.error('Error deleting current user account:', error);
+      return false;
+    }
+
+    await this.clearUserState();
+    this.currentUserSignal.set(null);
+
+    const { error: signOutError } = await this.supabaseSvc.supabase.auth.signOut();
+
+    if (signOutError) {
+      console.warn('Account deleted, but local sign-out reported an error:', signOutError);
+    }
+
+    return true;
   }
 
   private async setupPresence(user: User) {

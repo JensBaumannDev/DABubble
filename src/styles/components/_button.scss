@@ -1,9 +1,6 @@
 @use '../abstracts/' as *;
 @use 'sass:color';
 
-// ==========================================================================
-// BASE BUTTON STYLES
-// ==========================================================================
 .btn {
   @include flex(row, nowrap, center, center);
   display: inline-flex;
@@ -33,9 +30,6 @@
   }
 }
 
-// ==========================================================================
-// PRIMARY BUTTON
-// ==========================================================================
 .btn-primary {
   @extend .btn;
   background-color: $purple-1;
@@ -62,9 +56,6 @@
   }
 }
 
-// ==========================================================================
-// SECONDARY BUTTON
-// ==========================================================================
 .btn-secondary {
   @extend .btn;
   background-color: $white;
@@ -104,9 +95,36 @@
   }
 }
 
-// ==========================================================================
-// BUTTON SIZE VARIATIONS
-// ==========================================================================
+.btn-danger {
+  @extend .btn;
+  background-color: $light-red;
+  color: $red-text;
+  border: 1px solid $red-text;
+  box-shadow: $shadow-btn;
+
+  &:hover,
+  &:focus-visible {
+    background-color: $red-hover;
+    color: $red-text;
+    border-color: $red-text;
+    box-shadow: $shadow-btn-hover;
+  }
+
+  &:active {
+    background-color: $red-hover;
+    color: $red-text;
+    border-color: $red-text;
+  }
+
+  &:disabled,
+  &.disabled {
+    background-color: $white;
+    color: $light-purple;
+    border-color: $light-purple;
+    opacity: 1;
+  }
+}
+
 .btn-no-icon {
   width: 110px;
   height: 50px;
@@ -118,9 +136,6 @@
   gap: 8px;
 }
 
-// ==========================================================================
-// WORKSPACE TOGGLE BUTTONS (VERTICAL SIDEBAR TABS)
-// ==========================================================================
 .btn-workspace {
   @include flex(column, nowrap, flex-start, center);
   padding: 24px 8px;
@@ -135,7 +150,6 @@
   width: 55px;
   box-sizing: border-box;
 
-  // Icon at the top
   .btn-workspace-icon {
     width: 24px;
     height: 24px;
@@ -149,7 +163,6 @@
     }
   }
 
-  // Vertical text reading from bottom to top
   .btn-workspace-text {
     font-family: 'Inter', sans-serif;
     font-weight: 700;
@@ -161,7 +174,6 @@
     transition: color 200ms ease-in-out;
   }
 
-  // Hover states
   &:hover {
     box-shadow: 6px 6px 16px rgba($purple-1, 0.12);
     
@@ -175,28 +187,22 @@
     }
   }
 
-  // Active state
   &:active {
     box-shadow: 2px 2px 8px rgba($purple-1, 0.08);
     background-color: $bg-color;
   }
 }
 
-// Close variation (Height: 340px)
 .btn-workspace-close {
   @extend .btn-workspace;
   height: 340px;
 }
 
-// Open variation (Height: 310px)
 .btn-workspace-open {
   @extend .btn-workspace;
   height: 310px;
 }
 
-// ==========================================================================
-// BACK BUTTON (global, used on legal pages etc.)
-// ==========================================================================
 .btn-back {
   @include flex(row, nowrap, center, center);
   display: inline-flex;
@@ -240,9 +246,6 @@
   }
 }
 
-// ========================================================================== 
-// GOOGLE BUTTON
-// ========================================================================== 
 .btn-google {
   @extend .btn;
   border-radius: 100px;

@@ -64,8 +64,14 @@
 					Abbrechen
 				</button>
 
-				<button class="dialog-profile__action-btn btn-primary text-profile-action" type="button" (click)="saveProfile()">
+				<button class="dialog-profile__action-btn btn-primary text-profile-action" type="button" [disabled]="isDeletingAccount()" (click)="saveProfile()">
 					Speichern
+				</button>
+			</div>
+
+			<div class="dialog-profile__danger-zone">
+				<button class="dialog-profile__delete-btn text-profile-action" type="button" [disabled]="isDeletingAccount()" (click)="requestAccountDelete()">
+					Account löschen
 				</button>
 			</div>
 		</div>
@@ -110,6 +116,32 @@
 					<span>Nachricht</span>
 				</button>
 			}
+		</div>
+	}
+
+	@if (isDeleteConfirmOpen()) {
+		<div class="dialog-profile__confirm-backdrop" (click)="cancelAccountDelete()">
+			<section
+				class="dialog-profile__confirm-dialog"
+				role="alertdialog"
+				aria-modal="true"
+				aria-labelledby="delete-account-title"
+				aria-describedby="delete-account-description"
+				(click)="$event.stopPropagation()"
+			>
+				<h3 id="delete-account-title" class="dialog-profile__confirm-title text-profile-title">Account löschen?</h3>
+				<p id="delete-account-description" class="dialog-profile__confirm-text text-profile-value">
+					Dein Profil und alle zugehörigen Daten werden dauerhaft gelöscht. Dieser Schritt kann nicht rückgängig gemacht werden.
+				</p>
+				<div class="dialog-profile__confirm-actions">
+					<button class="dialog-profile__action-btn btn-secondary text-profile-action" type="button" [disabled]="isDeletingAccount()" (click)="cancelAccountDelete()">
+						Abbrechen
+					</button>
+					<button class="btn-danger text-profile-action" type="button" [disabled]="isDeletingAccount()" (click)="confirmAccountDelete()">
+						{{ isDeletingAccount() ? 'Lösche...' : 'Ja, Account löschen' }}
+					</button>
+				</div>
+			</section>
 		</div>
 	}
 </section>

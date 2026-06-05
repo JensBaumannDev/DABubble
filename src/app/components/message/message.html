@@ -1,4 +1,4 @@
-<div class="msg-container" [class.msg-container--right]="isCurrentUser" [class.msg-container--highlighted]="isHighlighted">
+<div class="msg-container" [class.msg-container--right]="isCurrentUser" [class.msg-container--highlighted]="isHighlighted" (click)="onMessageContainerClick($event)">
   
   <div class="msg-container__avatar-box">
     <img

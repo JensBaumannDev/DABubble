@@ -67,7 +67,6 @@ export class MessageComponent implements OnInit {
 
   private static allUsers: User[] = [];
   tokens: MessageToken[] = [];
-
   
   toggleMoreOptions() {
     const shouldOpen = !this.showMoreMenu;
@@ -86,7 +85,6 @@ export class MessageComponent implements OnInit {
     this.closeTransientPopups();
     this.showHoverReactionPicker = shouldOpen;
   }
-
   
   quickEmojis = ['🚀', '✅', '👍', '❤️', '😂', '😮'];
 
@@ -94,7 +92,6 @@ export class MessageComponent implements OnInit {
   get replyCount(): number {
     return (this.message as any).reply_count || 0;
   }
-
   
   get formattedLastReplyTime(): string {
     const time = (this.message as any).last_reply_time;
@@ -104,12 +101,10 @@ export class MessageComponent implements OnInit {
     const mins = String(date.getMinutes()).padStart(2, '0');
     return `${hrs}:${mins}`;
   }
-
   
   get isCurrentUser(): boolean {
     return this.message.sender_id === this.currentUserId;
   }
-
   
   get formattedTime(): string {
     if (!this.message.created_at) return '';
@@ -118,7 +113,6 @@ export class MessageComponent implements OnInit {
     const mins = String(date.getMinutes()).padStart(2, '0');
     return `${hrs}:${mins} Uhr`;
   }
-
   
   get reactionList() {
     if (!this.message.reactions) return [];
@@ -131,18 +125,27 @@ export class MessageComponent implements OnInit {
       };
     });
   }
-
   
   async toggleReaction(emoji: string) {
     this.closeTransientPopups();
     if (!this.message.id) return;
     await this.messageSvc.toggleReaction(this.message.id, emoji, this.currentUserId);
   }
-
   
   onDocumentClick(event: MouseEvent) {
     if (!this.elementRef.nativeElement.contains(event.target)) {
       this.closeAllPopups();
+    }
+  }
+
+  onMessageContainerClick(event: MouseEvent) {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (this.showReactionPicker && !target.closest('.msg-container__rx-add-wrapper')) {
+      this.showReactionPicker = false;
     }
   }
 
@@ -151,13 +154,11 @@ export class MessageComponent implements OnInit {
   }
 
   showEditEmojiPicker = false;
-
   
   onStartThread() {
     this.closeTransientPopups();
     this.threadClick.emit(this.message);
   }
-
   
   openSenderProfile(): void {
     if (!this.message.sender) {
@@ -166,7 +167,6 @@ export class MessageComponent implements OnInit {
 
     this.profileDialogSvc.open(this.message.sender, { suppressOutsideCloseOnce: this.isCurrentUser });
   }
-
   
   startEdit() {
     this.closeTransientPopups();
@@ -174,13 +174,11 @@ export class MessageComponent implements OnInit {
     this.editContent = this.message.content;
     this.showEditEmojiPicker = false;
   }
-
   
   cancelEdit() {
     this.isEditing = false;
     this.showEditEmojiPicker = false;
   }
-
   
   toggleEditEmojiPicker() {
     this.showEditEmojiPicker = !this.showEditEmojiPicker;
