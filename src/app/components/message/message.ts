@@ -129,7 +129,35 @@ export class MessageComponent implements OnInit {
   async toggleReaction(emoji: string) {
     this.closeTransientPopups();
     if (!this.message.id) return;
-    await this.messageSvc.toggleReaction(this.message.id, emoji, this.currentUserId);
+
+    if (!this.message.reactions) {
+      this.message.reactions = {};
+    }
+
+    const reactionsCopy = { ...this.message.reactions };
+    let userIds = reactionsCopy[emoji] ? [...reactionsCopy[emoji]] : [];
+
+    const index = userIds.indexOf(this.currentUserId);
+    if (index > -1) {
+      userIds.splice(index, 1);
+    } else {
+      userIds.push(this.currentUserId);
+    }
+
+    if (userIds.length === 0) {
+      delete reactionsCopy[emoji];
+    } else {
+      reactionsCopy[emoji] = userIds;
+    }
+
+    this.message.reactions = reactionsCopy;
+    this.cdr.markForCheck();
+
+    try {
+      await this.messageSvc.toggleReaction(this.message.id, emoji, this.currentUserId);
+    } catch (err) {
+      console.error('Fehler beim Speichern der Reaktion in der Datenbank:', err);
+    }
   }
   
   onDocumentClick(event: MouseEvent) {
