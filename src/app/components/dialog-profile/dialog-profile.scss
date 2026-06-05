@@ -12,6 +12,7 @@
 	box-shadow: $shadow-dialog;
 	padding: 40px;
 	box-sizing: border-box;
+	position: relative;
 
 	&--self {
 		padding: 40px 45px;
@@ -217,6 +218,61 @@
 		filter: brightness(0) invert(1);
 		flex-shrink: 0;
 	}
+
+	&__danger-zone {
+		@include flex(row, nowrap, center, center);
+	}
+
+	&__delete-btn {
+		@include button-reset;
+		color: $red-text;
+		transition: color 0.15s ease;
+
+		&:hover,
+		&:focus-visible {
+			color: $red-text;
+			outline: none;
+		}
+
+		&:disabled {
+			color: $light-purple;
+			cursor: not-allowed;
+		}
+	}
+
+	&__confirm-backdrop {
+		position: fixed;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 16px;
+		background: rgba(0, 0, 0, 0.4);
+		z-index: $z-index-profile-overlay-content + 1;
+		box-sizing: border-box;
+	}
+
+	&__confirm-dialog {
+		@include flex(column, nowrap, flex-start, stretch);
+		gap: 24px;
+		width: min(460px, calc(100vw - 32px));
+		padding: 32px;
+		background: $white;
+		border-radius: 30px;
+		box-shadow: $shadow-dialog;
+		box-sizing: border-box;
+	}
+
+	&__confirm-title,
+	&__confirm-text {
+		margin: 0;
+		color: $black;
+	}
+
+	&__confirm-actions {
+		@include flex(row, nowrap, flex-end, center);
+		gap: 16px;
+	}
 }
 
 @media (max-width: 1024px) {
@@ -274,6 +330,14 @@
 		&__avatar {
 			width: 160px;
 			height: 160px;
+		}
+
+		&__confirm-dialog {
+			padding: 24px 20px;
+		}
+
+		&__confirm-actions {
+			@include flex(column, nowrap, stretch, stretch);
 		}
 	}
 }

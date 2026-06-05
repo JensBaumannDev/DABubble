@@ -8,12 +8,14 @@ import {
 	output,
 	signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { User } from '../../interfaces/user.interface';
 import { userService } from '../../services/user.service';
 import { channelService } from '../../services/channel.service';
 import { ProfileDialogService } from '../../services/profile-dialog.service';
 import { avatarService } from '../../services/avatar.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
 	selector: 'app-dialog-profile',
@@ -30,10 +32,14 @@ export class DialogProfileComponent {
 	private readonly channelSvc = inject(channelService);
 	private readonly profileDialogSvc = inject(ProfileDialogService);
 	private readonly avatarSvc = inject(avatarService);
+	private readonly router = inject(Router);
+	private readonly toastSvc = inject(ToastService);
 	readonly isEditing = signal(false);
 	readonly editableName = signal('');
 	readonly editableAvatarUrl = signal('');
 	readonly isSaving = signal(false);
+	readonly isDeleteConfirmOpen = signal(false);
+	readonly isDeletingAccount = signal(false);
 	readonly availableAvatars = this.avatarSvc.getAvatars();
 
 	readonly profile = input.required<User>();
@@ -76,8 +82,21 @@ export class DialogProfileComponent {
 	}
 
 	cancelEdit(): void {
+		this.isDeleteConfirmOpen.set(false);
 		this.resetEditableFields();
 		this.isEditing.set(false);
+	}
+
+	requestAccountDelete(): void {
+		if (!this.canEdit() || this.isDeletingAccount()) {
+			return;
+		}
+
+		this.isDeleteConfirmOpen.set(true);
+	}
+
+	cancelAccountDelete(): void {
+		this.isDeleteConfirmOpen.set(false);
 	}
 
 	selectAvatar(avatarUrl: string): void {
@@ -107,6 +126,30 @@ export class DialogProfileComponent {
 			}
 		} finally {
 			this.isSaving.set(false);
+		}
+	}
+
+	async confirmAccountDelete(): Promise<void> {
+		if (!this.canEdit() || this.isDeletingAccount()) {
+			return;
+		}
+
+		this.isDeletingAccount.set(true);
+
+		try {
+			const wasDeleted = await this.authService.deleteCurrentUserAccount();
+
+			if (!wasDeleted) {
+				this.toastSvc.show('Account konnte nicht gelöscht werden.', 'error', 3000, undefined, false);
+				return;
+			}
+
+			this.isDeleteConfirmOpen.set(false);
+			this.profileDialogSvc.close();
+			this.toastSvc.show('Account wurde gelöscht.', 'success', 3000, undefined, false);
+			await this.router.navigate(['/login']);
+		} finally {
+			this.isDeletingAccount.set(false);
 		}
 	}
 
