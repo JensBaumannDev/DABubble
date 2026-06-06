@@ -200,7 +200,7 @@ export class ThreadViewComponent implements OnDestroy {
   }
 
   
-  onParentDeleted(parentId: string) {
+  onParentDeleted(_parentId: string) {
     this.threadSvc.closeThread();
   }
 

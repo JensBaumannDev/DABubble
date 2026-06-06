@@ -7,8 +7,7 @@ import { DialogProfileOverlayComponent } from './components/dialog-profile/dialo
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, ToastComponent, DialogProfileOverlayComponent],
-  templateUrl: './app.html',
-  styleUrl: './app.scss'
+  templateUrl: './app.html'
 })
 export class App {
   private readonly authRedirectToast = inject(AuthRedirectToastService);

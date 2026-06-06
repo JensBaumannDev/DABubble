@@ -82,7 +82,7 @@ export class ProfileMenuComponent {
     }
   }
 
-  onTouchEnd(event: TouchEvent) {
+  onTouchEnd(_event: TouchEvent) {
     if (!this.isDragging) return;
     this.isDragging = false;
     if (this.currentTranslateY > 80) {

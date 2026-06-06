@@ -40,7 +40,6 @@ export class LoginComponent implements OnInit {
   onIntroFinished(): void {
     this.showIntro.set(false);
   }
-  private readonly successToastDuration = 1500;
   private fb = inject(NonNullableFormBuilder);
   private router = inject(Router);
   readonly authService = inject(AuthService);
