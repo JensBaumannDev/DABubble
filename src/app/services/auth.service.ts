@@ -5,14 +5,6 @@ import { User as UserProfile } from '../interfaces/user.interface';
 import { channelService } from './channel.service';
 import { userService } from './user.service';
 
-type ProfileUpsertPayload = {
-  id: string;
-  display_name: string;
-  email: string;
-  avatar_url: string;
-  status: UserProfile['status'];
-};
-
 type SupabaseIdentityData = {
   avatar_url?: unknown;
   picture?: unknown;

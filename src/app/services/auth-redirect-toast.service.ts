@@ -1,11 +1,7 @@
-import { Injectable, inject } from '@angular/core';
-import { ToastService } from './toast.service';
+import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class AuthRedirectToastService {
-  private readonly toast = inject(ToastService);
-  private readonly redirectToastDuration = 1800;
-
   handleGoogleLoginSuccess(): void {
     if (typeof window === 'undefined') {
       return;

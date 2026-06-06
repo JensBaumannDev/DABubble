@@ -1,7 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom, Subscription } from 'rxjs';
-import { Channel } from '../../interfaces/channel.interface';
 import { User } from '../../interfaces/user.interface';
 import { Message } from '../../interfaces/message.interface';
 import { channelService } from '../../services/channel.service';
@@ -9,7 +8,6 @@ import { userService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { MessageService } from '../../services/message.service';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { ProfileDialogService } from '../../services/profile-dialog.service';
 import { MatDialog, MatDialogModule, MatDialogConfig } from '@angular/material/dialog';
 import { dialogCreateChannelComponent } from '../dialog-create-channel/dialog-create-channel';
 import { dialogAddMemberComponent } from '../dialog-add-member/dialog-add-member';
@@ -63,7 +61,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private authSvc = inject(AuthService);
   private dialog = inject(MatDialog);
   private messageSvc = inject(MessageService);
-  private profileDialogSvc = inject(ProfileDialogService);
   private toastSvc = inject(ToastService);
 
   channels = this.channelSvc.channels;

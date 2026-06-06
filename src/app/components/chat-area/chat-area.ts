@@ -19,8 +19,7 @@ import { DialogChannelMembersComponent } from '../dialog-channel-members/dialog-
 import { channelService } from '../../services/channel.service';
 import { MessageService } from '../../services/message.service';
 import { AuthService } from '../../services/auth.service';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { dialogAddMemberComponent } from '../dialog-add-member/dialog-add-member';
+import { MatDialogModule } from '@angular/material/dialog';
 import { userService } from '../../services/user.service';
 import { Message } from '../../interfaces/message.interface';
 import { User } from '../../interfaces/user.interface';
@@ -65,7 +64,6 @@ export class ChatAreaComponent implements OnDestroy {
 
   public channelSvc = inject(channelService);
   public userSvc = inject(userService);
-  private dialog = inject(MatDialog);
   private messageSvc = inject(MessageService);
   private authSvc = inject(AuthService);
   private threadSvc = inject(ThreadService);
@@ -642,7 +640,7 @@ export class ChatAreaComponent implements OnDestroy {
   }
 
   
-  async onMemberRemoved(memberId: string) {
+  async onMemberRemoved(_memberId: string) {
     const active = this.activeChannel();
     if (!active || !active.id) return;
 
@@ -723,7 +721,7 @@ export class ChatAreaComponent implements OnDestroy {
     }
   }
 
-  onTouchEnd(event: TouchEvent) {
+  onTouchEnd(_event: TouchEvent) {
     if (!this.isDragging) return;
     this.isDragging = false;
     if (this.currentTranslateY > 80) {

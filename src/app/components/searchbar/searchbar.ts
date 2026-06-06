@@ -40,7 +40,6 @@ export class SearchBarComponent implements OnInit {
   private allUsersCache: User[] = [];
   private allChannelsCache: Channel[] = [];
   private allMessagesCache: Message[] = [];
-  private myChannelIdsCache = new Set<string>();
   private userResultsMap = new Map<string, User>();
 
   get currentUserId(): string {
@@ -91,7 +90,6 @@ export class SearchBarComponent implements OnInit {
       if (!memberError && memberData) {
         memberData.forEach(item => myChannelIds.add(item.channel_id));
       }
-      this.myChannelIdsCache = myChannelIds;
 
       
       const [users, channels, messages] = await Promise.all([
