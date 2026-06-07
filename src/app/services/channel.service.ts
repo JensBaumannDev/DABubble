@@ -14,6 +14,7 @@ export class channelService {
   
   private activeChannelMembersSignal = signal<User[]>([]);
   public isNewMessageModeActive = signal<boolean>(false);
+  public isInitializing = signal<boolean>(true);
 
   
   readonly activeChannel = this.activeChannelSignal.asReadonly();

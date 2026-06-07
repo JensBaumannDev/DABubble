@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, ElementRef, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { EmojiComponent } from '@ctrl/ngx-emoji-mart/ngx-emoji';
 import { Message } from '../../interfaces/message.interface';
 import { MessageService } from '../../services/message.service';
@@ -68,6 +69,7 @@ export class MessageComponent implements OnInit {
   private userSvc = inject(userService);
   private threadSvc = inject(ThreadService);
   private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
 
   showReactionPicker = false;
   showHoverReactionPicker = false;
@@ -349,8 +351,7 @@ export class MessageComponent implements OnInit {
   onChannelClick(channelId: string) {
     const channel = this.channelSvc.channels().find(c => c.id === channelId);
     if (channel) {
-      this.channelSvc.selectChannel(channel);
-      this.userSvc.selectDirectChatUser(null);
+      this.router.navigate(['/main/channel', channel.id]);
       this.threadSvc.closeThread();
     }
   }

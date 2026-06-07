@@ -24,6 +24,7 @@ export class ThreadViewComponent implements OnDestroy {
   @ViewChild('repliesContainer') private repliesContainer!: ElementRef;
 
   replies = signal<Message[]>([]);
+  isRepliesLoading = signal<boolean>(false);
   private repliesSubscription: RealtimeChannel | null = null;
   private messageDeletedSubscription: Subscription | null = null;
   private optimisticReactionSubscription: Subscription | null = null;
@@ -92,6 +93,10 @@ export class ThreadViewComponent implements OnDestroy {
     effect(async () => {
       const parentMsg = this.threadSvc.activeMessage();
 
+      if (parentMsg && parentMsg.id) {
+        this.isRepliesLoading.set(true);
+      }
+
       
       if (this.repliesSubscription) {
         this.messageSvc.unsubscribe(this.repliesSubscription);
@@ -127,9 +132,12 @@ export class ThreadViewComponent implements OnDestroy {
         } catch (error) {
           console.error('Error loading thread replies:', error);
           this.replies.set([]);
+        } finally {
+          this.isRepliesLoading.set(false);
         }
       } else {
         this.replies.set([]);
+        this.isRepliesLoading.set(false);
       }
     });
   }

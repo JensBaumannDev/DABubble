@@ -10,6 +10,7 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { MessageInputComponent } from '../message-input/message-input';
@@ -69,9 +70,11 @@ export class ChatAreaComponent implements OnDestroy {
   private threadSvc = inject(ThreadService);
   private profileDialogSvc = inject(ProfileDialogService);
   private toastSvc = inject(ToastService);
+  private router = inject(Router);
 
   activeChannel = this.channelSvc.activeChannel;
   activeDirectChatUser = this.userSvc.activeDirectChatUser;
+  isMessagesLoading = signal<boolean>(false);
 
   recipientQuery = '';
   showSearchDropdown = false;
@@ -197,6 +200,10 @@ export class ChatAreaComponent implements OnDestroy {
       const channel = this.activeChannel();
       const targetUser = this.activeDirectChatUser();
 
+      if (channel || targetUser) {
+        this.isMessagesLoading.set(true);
+      }
+
       if (!channel || targetUser) {
         this.isChannelDetailsOpen = false;
         this.isChannelMembersOpen = false;
@@ -241,6 +248,8 @@ export class ChatAreaComponent implements OnDestroy {
         } catch (error) {
           console.error('Error loading channel messages:', error);
           this.messages.set([]);
+        } finally {
+          this.isMessagesLoading.set(false);
         }
       } else if (targetUser && targetUser.id) {
         try {
@@ -273,9 +282,12 @@ export class ChatAreaComponent implements OnDestroy {
         } catch (error) {
           console.error('Error loading direct messages:', error);
           this.messages.set([]);
+        } finally {
+          this.isMessagesLoading.set(false);
         }
       } else {
         this.messages.set([]);
+        this.isMessagesLoading.set(false);
       }
     });
   }
@@ -464,8 +476,7 @@ export class ChatAreaComponent implements OnDestroy {
         const targetChannel = this.selectedRecipient;
         const newMsg = await this.messageSvc.sendMessage(content, userId, targetChannel.id);
         if (newMsg) {
-          this.channelSvc.selectChannel(targetChannel);
-          this.channelSvc.setNewMessageMode(false);
+          this.router.navigate(['/main/channel', targetChannel.id]);
           this.clearSelectedRecipient();
         } else {
           console.error('[onSendMessage] Failed to send message to channel');
@@ -474,8 +485,7 @@ export class ChatAreaComponent implements OnDestroy {
         const targetUser = this.selectedRecipient;
         const newMsg = await this.messageSvc.sendDirectMessage(content, userId, targetUser.id);
         if (newMsg) {
-          this.userSvc.selectDirectChatUser(targetUser);
-          this.channelSvc.setNewMessageMode(false);
+          this.router.navigate(['/main/dm', targetUser.id]);
           this.clearSelectedRecipient();
         } else {
           console.error('[onSendMessage] Failed to send direct message');
@@ -676,10 +686,11 @@ export class ChatAreaComponent implements OnDestroy {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(`chat_closed:${currentUserId}:${targetUser.id}`, new Date().toISOString());
       }
-      this.userSvc.selectDirectChatUser(null);
       const fetchedChannels = await this.channelSvc.loadChannels();
       if (fetchedChannels.length > 0) {
-        this.channelSvc.selectChannel(fetchedChannels[0]);
+        this.router.navigate(['/main/channel', fetchedChannels[0].id]);
+      } else {
+        this.router.navigate(['/main']);
       }
     }
   }
@@ -750,10 +761,11 @@ export class ChatAreaComponent implements OnDestroy {
         if (typeof window !== 'undefined' && window.localStorage) {
           localStorage.setItem(`chat_closed:${currentUserId}:${targetUser.id}`, new Date().toISOString());
         }
-        this.userSvc.selectDirectChatUser(null);
         const fetchedChannels = await this.channelSvc.loadChannels();
         if (fetchedChannels.length > 0) {
-          this.channelSvc.selectChannel(fetchedChannels[0]);
+          this.router.navigate(['/main/channel', fetchedChannels[0].id]);
+        } else {
+          this.router.navigate(['/main']);
         }
       } else {
         this.toastSvc.show('Fehler beim Löschen des Chatverlaufs', 'error', 3000, undefined, false);

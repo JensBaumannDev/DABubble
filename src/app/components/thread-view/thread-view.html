@@ -12,7 +12,11 @@
   </div>
 
   <div class="thread-view__body" #repliesContainer>
-    @if (threadSvc.activeMessage(); as parentMsg) {
+    @if (isRepliesLoading()) {
+      <div class="thread-view__loading-container">
+        <div class="thread-view__loading-spinner"></div>
+      </div>
+    } @else if (threadSvc.activeMessage(); as parentMsg) {
       
       <div class="thread-view__parent">
         <app-message 

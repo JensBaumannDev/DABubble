@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, inject, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { channelService } from '../../services/channel.service';
 import { userService } from '../../services/user.service';
 import { MessageService } from '../../services/message.service';
@@ -25,6 +26,7 @@ export class SearchBarComponent implements OnInit {
   private threadSvc = inject(ThreadService);
   private supabaseSvc = inject(supabaseService);
   private elementRef = inject(ElementRef);
+  private router = inject(Router);
 
   @Input() placeholder: string = 'Devspace durchsuchen';
   @Input() isSidebarSearch: boolean = false;
@@ -225,16 +227,14 @@ export class SearchBarComponent implements OnInit {
   }
 
   selectChannel(channel: Channel) {
-    this.channelSvc.selectChannel(channel);
-    this.userSvc.selectDirectChatUser(null);
+    this.router.navigate(['/main/channel', channel.id]);
     this.threadSvc.closeThread();
     this.showDropdown = false;
     this.itemSelected.emit();
   }
 
   async selectUser(user: User) {
-    this.userSvc.selectDirectChatUser(user);
-    this.channelSvc.selectChannel(null);
+    this.router.navigate(['/main/dm', user.id]);
     this.threadSvc.closeThread();
     
     const currentUserId = this.currentUserId;
@@ -254,19 +254,12 @@ export class SearchBarComponent implements OnInit {
     }
 
     if (msg.channel_id) {
-      const channel = this.channelSvc.channels().find(c => c.id === msg.channel_id) || {
-        id: msg.channel_id,
-        name: 'Kanal',
-        created_by: ''
-      };
-      this.channelSvc.selectChannel(channel as Channel);
-      this.userSvc.selectDirectChatUser(null);
+      this.router.navigate(['/main/channel', msg.channel_id]);
     } else if (msg.recipient_id) {
       const partnerId = msg.sender_id === this.currentUserId ? msg.recipient_id : msg.sender_id;
       const partner = await this.userSvc.getUserById(partnerId);
       if (partner) {
-        this.userSvc.selectDirectChatUser(partner);
-        this.channelSvc.selectChannel(null);
+        this.router.navigate(['/main/dm', partner.id]);
         
         const currentUserId = this.currentUserId;
         if (currentUserId) {

@@ -1,6 +1,8 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom, Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
+import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { User } from '../../interfaces/user.interface';
 import { Message } from '../../interfaces/message.interface';
 import { channelService } from '../../services/channel.service';
@@ -62,6 +64,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private messageSvc = inject(MessageService);
   private toastSvc = inject(ToastService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   channels = this.channelSvc.channels;
   users = signal<User[]>([]);
@@ -72,6 +76,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private incomingDMsSubscription: RealtimeChannel | null = null;
   private globalMessagesSubscription: RealtimeChannel | null = null;
   private directChatClearedSubscription: Subscription | null = null;
+  private routerSubscription: Subscription | null = null;
 
   
   constructor() {
@@ -137,6 +142,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
   
   async ngOnInit() {
     await this.loadData();
+    this.handleRouteSelection();
+    this.channelSvc.isInitializing.set(false);
+
+    this.routerSubscription = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.handleRouteSelection();
+    });
+
     this.directChatClearedSubscription = this.messageSvc.directChatCleared.subscribe(() => {
       this.loadData();
     });
@@ -152,6 +166,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     if (this.directChatClearedSubscription) {
       this.directChatClearedSubscription.unsubscribe();
+    }
+    if (this.routerSubscription) {
+      this.routerSubscription.unsubscribe();
     }
   }
 
@@ -173,8 +190,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     
     const isResponsive = typeof window !== 'undefined' && window.innerWidth <= 1440;
     if (isResponsive) {
-      if (fetchedChannels.length > 0 && !this.activeChannel() && !this.userSvc.activeDirectChatUser()) {
-        this.channelSvc.selectChannel(fetchedChannels[0]);
+      if (fetchedChannels.length > 0 && !this.activeChannel() && !this.userSvc.activeDirectChatUser() && !this.channelSvc.isNewMessageModeActive()) {
+        this.router.navigate(['/main/channel', fetchedChannels[0].id]);
       }
     }
 
@@ -310,9 +327,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
   
   selectChannel(id: string | undefined) {
     if (!id) return;
-    const channel = this.channels().find(c => c.id === id) || null;
-    this.channelSvc.selectChannel(channel);
-    this.userSvc.selectDirectChatUser(null); 
+    const active = this.activeChannel();
+    if (active && active.id === id) {
+      this.router.navigate(['/main']);
+    } else {
+      this.router.navigate(['/main/channel', id]);
+    }
 
     const currentUserId = this.currentUserId;
     if (currentUserId) {
@@ -334,32 +354,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
   selectUser(id: string | undefined) {
     if (!id) return;
 
-
-
-    let user = this.users().find(u => u.id === id) || null;
-    if (!user && id === 'dabubble-team-local-id') {
-      user = {
-        id: 'dabubble-team-local-id',
-        display_name: 'DABubble-Team',
-        email: 'team@dabubble.local',
-        avatar_url: 'img/logo/Logo.svg',
-        status: 'online'
-      };
+    const activeUser = this.userSvc.activeDirectChatUser();
+    if (activeUser && activeUser.id === id) {
+      this.router.navigate(['/main']);
+    } else {
+      this.router.navigate(['/main/dm', id]);
     }
-    this.userSvc.selectDirectChatUser(user);
-    this.channelSvc.selectChannel(null); 
-    this.channelSvc.setNewMessageMode(false);
 
     const currentUserId = this.currentUserId;
     if (currentUserId) {
-      
       this.setSafeLocalStorageItem(`chat_last_read:${currentUserId}:${id}`, new Date().toISOString());
-      
-      
       this.setSafeLocalStorageItem(`chat_closed:${currentUserId}:${id}`, '');
     }
 
-    
     this.unreadUsers.update((prev) => {
       const copy = { ...prev };
       delete copy[id];
@@ -381,10 +388,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (!currentUserId) return;
 
     try {
-      
       this.setSafeLocalStorageItem(`chat_closed:${currentUserId}:${userId}`, new Date().toISOString());
 
-      
       this.unreadUsers.update((prev) => {
         const copy = { ...prev };
         delete copy[userId];
@@ -393,18 +398,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
       
       this.setSafeLocalStorageItem(`chat_last_read:${currentUserId}:${userId}`, new Date().toISOString());
 
-      
       if (this.userSvc.activeDirectChatUser()?.id === userId) {
-        this.userSvc.selectDirectChatUser(null);
-        
-        
         const fetchedChannels = await this.channelSvc.loadChannels();
         if (fetchedChannels.length > 0) {
-          this.channelSvc.selectChannel(fetchedChannels[0]);
+          this.router.navigate(['/main/channel', fetchedChannels[0].id]);
+        } else {
+          this.router.navigate(['/main']);
         }
       }
 
-      
       await this.loadData();
     } catch (err) {
       console.error('Failed to close chat:', err);
@@ -443,11 +445,57 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   startNewMessage() {
-    this.channelSvc.setNewMessageMode(true);
-    this.userSvc.selectDirectChatUser(null);
+    this.router.navigate(['/main/new-message']);
     if (window.innerWidth <= 1440) {
       this.isClosed = true;
       this.toggleSidebar.emit(true);
+    }
+  }
+
+  private handleRouteSelection() {
+    const url = this.router.url;
+    const fetchedChannels = this.channelSvc.channels();
+    const allUsers = this.users();
+
+    if (url.includes('/main/channel/')) {
+      const parts = url.split('/main/channel/');
+      const channelId = parts[1]?.split('?')[0];
+      if (channelId) {
+        const channel = fetchedChannels.find(c => c.id === channelId);
+        if (channel) {
+          this.channelSvc.selectChannel(channel);
+          this.userSvc.selectDirectChatUser(null);
+        }
+      }
+    } else if (url.includes('/main/dm/')) {
+      const parts = url.split('/main/dm/');
+      const userId = parts[1]?.split('?')[0];
+      if (userId) {
+        if (userId === 'dabubble-team-local-id') {
+          const teamUser = {
+            id: 'dabubble-team-local-id',
+            display_name: 'DABubble-Team',
+            email: 'team@dabubble.local',
+            avatar_url: 'img/logo/Logo.svg',
+            status: 'online' as const
+          };
+          this.userSvc.selectDirectChatUser(teamUser);
+          this.channelSvc.selectChannel(null);
+        } else {
+          const user = allUsers.find(u => u.id === userId);
+          if (user) {
+            this.userSvc.selectDirectChatUser(user);
+            this.channelSvc.selectChannel(null);
+          }
+        }
+      }
+    } else if (url.includes('/main/new-message')) {
+      this.channelSvc.setNewMessageMode(true);
+      this.userSvc.selectDirectChatUser(null);
+    } else {
+      this.channelSvc.selectChannel(null);
+      this.userSvc.selectDirectChatUser(null);
+      this.channelSvc.setNewMessageMode(false);
     }
   }
 
@@ -518,6 +566,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
           }
 
           await this.loadData();
+          if (active && active.id) {
+            this.router.navigate(['/main/channel', active.id]);
+          }
           this.toastSvc.show('Channel erfolgreich erstellt.', 'success', 3000, undefined, false);
         } catch (error) {
           console.error('Failed to create channel:', error);
