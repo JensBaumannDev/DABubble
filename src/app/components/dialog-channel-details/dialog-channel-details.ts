@@ -1,6 +1,7 @@
 import { Component, Output, EventEmitter, Input, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { channelService } from '../../services/channel.service';
 import { userService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
@@ -22,6 +23,7 @@ export class DialogChannelDetailsComponent implements OnInit {
   private userSvc = inject(userService);
   private authSvc = inject(AuthService);
   private profileDialogSvc = inject(ProfileDialogService);
+  private router = inject(Router);
 
   
   isUserOnline(member: any): boolean {
@@ -67,9 +69,9 @@ export class DialogChannelDetailsComponent implements OnInit {
         
         const remaining = this.channelSvc.channels();
         if (remaining.length > 0) {
-          this.channelSvc.selectChannel(remaining[0]);
+          this.router.navigate(['/main/channel', remaining[0].id]);
         } else {
-          this.channelSvc.selectChannel(null);
+          this.router.navigate(['/main']);
         }
 
         this.close.emit();
@@ -123,6 +125,12 @@ export class DialogChannelDetailsComponent implements OnInit {
     if (active && active.id && active.created_by === this.currentUserId) {
       try {
         await this.channelSvc.deleteChannel(active.id);
+        const remaining = this.channelSvc.channels();
+        if (remaining.length > 0) {
+          this.router.navigate(['/main/channel', remaining[0].id]);
+        } else {
+          this.router.navigate(['/main']);
+        }
         this.close.emit();
       } catch (error) {
         console.error('Failed to delete channel:', error);

@@ -131,7 +131,11 @@
   </div>
 
   <div class="chat-area__body" #scrollContainer>
-    @if (channelSvc.isNewMessageModeActive()) {
+    @if (channelSvc.isInitializing() || isMessagesLoading()) {
+      <div class="chat-area__loading-container">
+        <div class="chat-area__loading-spinner"></div>
+      </div>
+    } @else if (channelSvc.isNewMessageModeActive()) {
     } @else if (!activeChannel() && !activeDirectChatUser()) {
       <div class="chat-area__welcome-container">
         <div class="chat-area__welcome-header">

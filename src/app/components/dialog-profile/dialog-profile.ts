@@ -163,8 +163,7 @@ export class DialogProfileComponent {
 			return;
 		}
 
-		this.userSvc.selectDirectChatUser(this.profile());
-		this.channelSvc.selectChannel(null);
+		this.router.navigate(['/main/dm', this.profile().id]);
 		this.profileDialogSvc.close();
 	}
 }
