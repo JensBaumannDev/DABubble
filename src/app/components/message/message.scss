@@ -72,6 +72,7 @@
     .msg-container__rx-pill {
       &:hover .msg-container__rx-tooltip,
       &:focus-visible .msg-container__rx-tooltip {
+        @include flex(column, nowrap, center, center);
         transform: translateX(50%) translateY(0);
       }
     }
@@ -344,6 +345,7 @@
 
     &:hover .msg-container__rx-tooltip,
     &:focus-visible .msg-container__rx-tooltip {
+      @include flex(column, nowrap, center, center);
       opacity: 1;
       visibility: visible;
       transform: translateX(-50%) translateY(0);
@@ -359,7 +361,7 @@
     position: absolute;
     left: 210%;
     bottom: calc(100% + 1px);
-    @include flex(column, nowrap, center, center);
+    display: none;
     gap: 5px;
     font-size: 18px;
     min-width: 180px;
