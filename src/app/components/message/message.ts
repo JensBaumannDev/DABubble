@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EmojiComponent } from '@ctrl/ngx-emoji-mart/ngx-emoji';
-import { EmojiPickerPopupComponent } from '../emoji-picker-popup/emoji-picker-popup';
 import { Message } from '../../interfaces/message.interface';
 import { messageService } from '../../services/message.service';
 import { ProfileDialogService } from '../../services/profile-dialog.service';
@@ -13,6 +12,7 @@ import { userService } from '../../services/user.service';
 import { ThreadService } from '../../services/thread.service';
 import { User } from '../../interfaces/user.interface';
 import { EmojiRecentService } from '../../services/emoji-recent.service';
+import { EmojiPickerOverlayService } from '../../services/emoji-picker-overlay.service';
 
 interface MessageToken {
   type: 'text' | 'channel' | 'mention';
@@ -40,7 +40,7 @@ interface ReactionListItem {
 @Component({
   selector: 'app-message',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmojiComponent, EmojiPickerPopupComponent],
+  imports: [CommonModule, FormsModule, EmojiComponent],
   templateUrl: './message.html',
   styleUrl: './message.scss',
   host: {
@@ -49,10 +49,13 @@ interface ReactionListItem {
   },
 })
 export class MessageComponent implements OnInit {
+  private static nextPickerId = 0;
+  private static allUsersPromise: Promise<User[]> | null = null;
   private _message!: Message;
   private readonly emojiRegex = /\p{Extended_Pictographic}/u;
   private readonly regionalFlagRegex = /^[\u{1F1E6}-\u{1F1FF}]{2}$/u;
   private reactionOrder: string[] = [];
+  private readonly pickerScope = `message:${MessageComponent.nextPickerId++}`;
 
   @Input({ required: true }) set message(val: Message) {
     this._message = val;
@@ -82,10 +85,10 @@ export class MessageComponent implements OnInit {
   private userSvc = inject(userService);
   private threadSvc = inject(ThreadService);
   private emojiRecentSvc = inject(EmojiRecentService);
+  private pickerSvc = inject(EmojiPickerOverlayService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
 
-  activeReactionPicker: 'footer' | 'hover' | null = null;
   showMoreMenu = false;
   isEditing = false;
   editContent = '';
@@ -99,10 +102,9 @@ export class MessageComponent implements OnInit {
     this.showMoreMenu = shouldOpen;
   }
 
-  toggleReactionPicker(kind: 'footer' | 'hover') {
-    const shouldOpen = this.activeReactionPicker !== kind;
+  toggleReactionPicker(kind: 'footer' | 'hover', trigger: HTMLElement) {
     this.closeTransientPopups();
-    this.activeReactionPicker = shouldOpen ? kind : null;
+    this.pickerSvc.toggle(trigger, this.getPickerConfig(kind));
   }
   
   quickEmojis = ['🚀', '✅', '👍', '❤️', '😂', '😮'];
@@ -144,7 +146,7 @@ export class MessageComponent implements OnInit {
   }
 
   isReactionPickerOpen(kind: 'footer' | 'hover'): boolean {
-    return this.activeReactionPicker === kind;
+    return this.pickerSvc.isOpen(this.pickerOwner(kind));
   }
 
   onReactionPickerSelect(emoji: string): void {
@@ -193,17 +195,11 @@ export class MessageComponent implements OnInit {
       return;
     }
 
-    if (
-      this.activeReactionPicker !== null &&
-      !target.closest('.msg-container__reaction-picker-anchor') &&
-      !target.closest('.emoji-popup')
-    ) {
-      this.activeReactionPicker = null;
-    }
+    if (this.hasOpenPicker() && !target.closest('.msg-container__reaction-picker-anchor')) this.closeReactionPickers();
   }
 
   onMouseLeave() {
-    this.closeTransientPopups();
+    if (!this.hasOpenPicker()) this.closeTransientPopups();
   }
 
   showEditEmojiPicker = false;
@@ -259,33 +255,32 @@ export class MessageComponent implements OnInit {
     }
   }
 
-  async ngOnInit() {
-    if (MessageComponent.allUsers.length === 0) {
-      await this.userSvc.getAllUsers()
-        .then(u => MessageComponent.allUsers = u)
-        .catch(e => console.error('Fehler beim Laden der User im MessageComponent-Init:', e));
-    }
-    setTimeout(() => { this.parseMessageContent(); this.cdr.markForCheck(); }, 0);
+  ngOnInit() {
+    void this.ensureUsersLoaded();
   }
 
   parseMessageContent() {
     const content = this.message?.content || '';
-    if (!content) {
-      this.tokens = [];
-      return this.cdr.markForCheck();
-    }
-    if (MessageComponent.allUsers.length > 0) {
-      this.executeParsing(content);
-    } else {
-      this.loadUsersAndParse(content);
-    }
+    if (!content) return this.resetTokens();
+    if (MessageComponent.allUsers.length > 0) return this.executeParsing(content);
+    void this.ensureUsersLoaded().then(() => this.executeParsing(content));
   }
 
-  private loadUsersAndParse(content: string): void {
-    this.userSvc.getAllUsers()
-      .then(users => MessageComponent.allUsers = users)
-      .catch(e => console.error('Fehler beim Laden der User für Message-Parsing:', e))
-      .finally(() => setTimeout(() => { this.executeParsing(content); this.cdr.markForCheck(); }, 0));
+  private resetTokens(): void {
+    this.tokens = [];
+    this.cdr.markForCheck();
+  }
+
+  private ensureUsersLoaded(): Promise<User[]> {
+    if (MessageComponent.allUsers.length > 0) return Promise.resolve(MessageComponent.allUsers);
+    if (!MessageComponent.allUsersPromise) MessageComponent.allUsersPromise = this.loadAllUsers();
+    return MessageComponent.allUsersPromise;
+  }
+
+  private loadAllUsers(): Promise<User[]> {
+    return this.userSvc.getAllUsers().then((users) => MessageComponent.allUsers = users)
+      .catch((error) => (console.error('Fehler beim Laden der User in MessageComponent:', error), []))
+      .finally(() => MessageComponent.allUsersPromise = null);
   }
 
   private executeParsing(content: string) {
@@ -352,8 +347,17 @@ export class MessageComponent implements OnInit {
   }
 
   private closeTransientPopups() {
-    this.activeReactionPicker = null;
+    this.closeReactionPickers();
     this.showMoreMenu = false;
+  }
+
+  private closeReactionPickers(): void {
+    this.pickerSvc.close(this.pickerOwner('footer'));
+    this.pickerSvc.close(this.pickerOwner('hover'));
+  }
+
+  private hasOpenPicker(): boolean {
+    return this.isReactionPickerOpen('footer') || this.isReactionPickerOpen('hover');
   }
 
   private buildReactionList(): ReactionListItem[] {
@@ -427,6 +431,14 @@ export class MessageComponent implements OnInit {
       ...this.reactionOrder.filter((emoji) => nextKeys.includes(emoji)),
       ...nextKeys.filter((emoji) => !this.reactionOrder.includes(emoji)),
     ];
+  }
+
+  private pickerOwner(kind: 'footer' | 'hover'): string {
+    return `${this.pickerScope}:${kind}`;
+  }
+
+  private getPickerConfig(kind: 'footer' | 'hover') {
+    return { owner: this.pickerOwner(kind), userId: this.currentUserId, variant: kind === 'footer' ? 'message-footer' as const : 'message-hover' as const, alignRight: this.isCurrentUser, color: '#444df2', onSelect: (emoji: string) => this.onReactionPickerSelect(emoji) };
   }
 
   private closeAllPopups() {

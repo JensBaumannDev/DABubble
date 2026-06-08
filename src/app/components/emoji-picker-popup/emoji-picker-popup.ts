@@ -2,8 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { PickerModule } from '@ctrl/ngx-emoji-mart';
 import { EmojiData } from '@ctrl/ngx-emoji-mart/ngx-emoji';
 import { EmojiRecentService } from '../../services/emoji-recent.service';
-
-type EmojiPickerVariant = 'input' | 'message-footer' | 'message-hover';
+import { EmojiPickerVariant } from '../../services/emoji-picker-overlay.service';
 
 interface EmojiClickEvent {
   emoji?: Partial<EmojiData>;

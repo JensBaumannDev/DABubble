@@ -155,7 +155,8 @@
     @include scrollbar(6px, $light-purple);
     flex: 1;
     overflow-y: auto;
-    padding-right: 4px;
+    margin-right: -10px;
+    padding-right: 10px;
   }
 
   &__category {

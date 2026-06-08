@@ -193,8 +193,9 @@
 
           <div class="msg-container__rx-add-wrapper msg-container__reaction-picker-anchor">
             <button
+              #footerPickerTrigger
               class="msg-container__add-rx-btn"
-              (click)="toggleReactionPicker('footer')"
+              (click)="toggleReactionPicker('footer', footerPickerTrigger)"
               type="button"
               aria-label="Reaktion hinzufügen"
               title="Reaktion hinzufügen"
@@ -203,15 +204,6 @@
                 <span class="msg-container__add-rx-icon" aria-hidden="true"></span>
               </span>
             </button>
-
-            @if (isReactionPickerOpen('footer')) {
-              <app-emoji-picker-popup
-                [userId]="currentUserId"
-                [variant]="'message-footer'"
-                [alignRight]="isCurrentUser"
-                (emojiSelected)="onReactionPickerSelect($event)"
-              ></app-emoji-picker-popup>
-            }
           </div>
         </div>
       }
@@ -234,8 +226,9 @@
 
     <div class="msg-container__menu-btn-wrapper msg-container__reaction-picker-anchor">
       <button
+        #hoverPickerTrigger
         class="msg-container__add-rx-btn"
-        (click)="toggleReactionPicker('hover')"
+        (click)="toggleReactionPicker('hover', hoverPickerTrigger)"
         type="button"
         aria-label="Reaktion hinzufügen"
         title="Reaktion hinzufügen"
@@ -244,15 +237,6 @@
           <span class="msg-container__add-rx-icon" aria-hidden="true"></span>
         </span>
       </button>
-
-      @if (isReactionPickerOpen('hover')) {
-        <app-emoji-picker-popup
-          [userId]="currentUserId"
-          [variant]="'message-hover'"
-          [alignRight]="isCurrentUser"
-          (emojiSelected)="onReactionPickerSelect($event)"
-        ></app-emoji-picker-popup>
-      }
     </div>
 
     @if (!isThreadMessage) {

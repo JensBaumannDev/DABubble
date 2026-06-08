@@ -17,7 +17,7 @@ import { userService } from '../../services/user.service';
 import { authService } from '../../services/auth.service';
 import { ThreadService } from '../../services/thread.service';
 import { messageService } from '../../services/message.service';
-import { EmojiPickerPopupComponent } from '../emoji-picker-popup/emoji-picker-popup';
+import { EmojiPickerOverlayService } from '../../services/emoji-picker-overlay.service';
 import { MessageInputPopupHelper, PopupChannel, PopupUser } from './message-input-popup.helper';
 
 interface MessageInputPart {
@@ -28,7 +28,7 @@ interface MessageInputPart {
 
 @Component({
   selector: 'app-message-input',
-  imports: [CommonModule, FormsModule, EmojiComponent, EmojiPickerPopupComponent],
+  imports: [CommonModule, FormsModule, EmojiComponent],
   templateUrl: './message-input.html',
   styleUrl: './message-input.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,10 +38,12 @@ interface MessageInputPart {
   },
 })
 export class MessageInputComponent implements OnDestroy {
+  private static nextPickerId = 0;
   private readonly emojiRegex = /\p{Extended_Pictographic}/u;
   private readonly regionalFlagRegex = /^[\u{1F1E6}-\u{1F1FF}]{2}$/u;
   private _messageText = '';
   renderedScrollTop = 0;
+  readonly pickerOwner = `message-input:${MessageInputComponent.nextPickerId++}`;
 
   @Input() placeholder: string = 'Nachricht an #Entwicklerteam';
   @Input() disabled: boolean = false;
@@ -54,6 +56,7 @@ export class MessageInputComponent implements OnDestroy {
   private authSvc = inject(authService);
   private threadSvc = inject(ThreadService);
   private messageSvc = inject(messageService);
+  private pickerSvc = inject(EmojiPickerOverlayService);
   private elementRef = inject(ElementRef);
 
   readonly popup = new MessageInputPopupHelper(
@@ -73,18 +76,16 @@ export class MessageInputComponent implements OnDestroy {
   }
 
   readonly emojiSet = 'apple';
-  showEmojiPicker = false;
 
   private typingTimeout: ReturnType<typeof setTimeout> | null = null;
   private typingInterval: ReturnType<typeof setInterval> | null = null;
   private isCurrentlyTyping = false;
 
-  // ── Delegatoren für Template-Bindungen ────────────────────────────────────
   get activePopup() { return this.popup.activePopup; }
   get popupUsers(): PopupUser[] { return this.popup.popupUsers; }
   get popupChannels(): PopupChannel[] { return this.popup.popupChannels; }
   get isLoading() { return this.popup.isLoading; }
-  get isEmojiActive(): boolean { return this.showEmojiPicker; }
+  get isEmojiActive(): boolean { return this.pickerSvc.isOpen(this.pickerOwner); }
   get isMentionActive(): boolean { return this.popup.isMentionActive; }
 
   get currentUserId(): string { return this.authSvc.currentUser()?.id || ''; }
@@ -139,23 +140,21 @@ export class MessageInputComponent implements OnDestroy {
 
   onMessageInputClick(): void {
     this.popup.closePopup();
-    this.showEmojiPicker = false;
+    this.pickerSvc.close(this.pickerOwner);
   }
 
-  toggleEmoji(): void {
-    const shouldOpen = !this.showEmojiPicker;
+  toggleEmoji(trigger: HTMLElement): void {
     this.popup.closePopup();
-    this.showEmojiPicker = shouldOpen;
+    this.pickerSvc.toggle(trigger, this.getPickerConfig());
   }
 
   async toggleMention(): Promise<void> {
-    this.showEmojiPicker = false;
+    this.pickerSvc.close(this.pickerOwner);
     await this.popup.toggleMention();
   }
 
   onEmojiSelected(emoji: string): void {
     if (!emoji) return;
-    this.showEmojiPicker = false;
     const textarea = this.textareaElement;
     if (!textarea) { this.messageText += emoji; return; }
     this.insertEmojiAtCursor(textarea, emoji);
@@ -182,18 +181,22 @@ export class MessageInputComponent implements OnDestroy {
   insertMention(text: string): void { this.popup.insertMention(text); }
 
   onDocumentClick(event: MouseEvent): void {
-    if (this.popup.activePopup === 'none' && !this.showEmojiPicker) return;
+    if (this.popup.activePopup === 'none' && !this.isEmojiActive) return;
     if (!this.elementRef.nativeElement.contains(event.target)) {
       this.popup.closePopup();
-      this.showEmojiPicker = false;
+      this.pickerSvc.close(this.pickerOwner);
     }
   }
 
   onEscapePressed(): void {
-    if (this.popup.activePopup !== 'none' || this.showEmojiPicker) {
+    if (this.popup.activePopup !== 'none' || this.isEmojiActive) {
       this.popup.closePopup();
-      this.showEmojiPicker = false;
+      this.pickerSvc.close(this.pickerOwner);
     }
+  }
+
+  private getPickerConfig() {
+    return { owner: this.pickerOwner, userId: this.currentUserId, variant: 'input' as const, alignRight: false, color: '#444df2', onSelect: (emoji: string) => this.onEmojiSelected(emoji) };
   }
 
   private buildMessageTextParts(text: string): MessageInputPart[] {

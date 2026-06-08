@@ -1,14 +1,4 @@
 <div class="message-input" [class.message-input--disabled]="disabled" (click)="onMessageInputClick()">
-  @if (showEmojiPicker) {
-    <app-emoji-picker-popup
-      [userId]="currentUserId"
-      [variant]="'input'"
-      [color]="'#444df2'"
-      (emojiSelected)="onEmojiSelected($event)"
-    ></app-emoji-picker-popup>
-  }
-
-  
   @if (activePopup === 'users') {
     <div class="mention-popup" (click)="$event.stopPropagation()">
       <div class="mention-popup__list">
@@ -92,7 +82,7 @@
   
   <div class="message-input__actions">
     <div class="message-input__actions-left">
-      <button class="message-input__btn" [class.active]="isEmojiActive" (click)="$event.stopPropagation(); toggleEmoji()" type="button" aria-label="Add Emoji" [disabled]="disabled">
+      <button #emojiTrigger class="message-input__btn" [class.active]="isEmojiActive" (click)="$event.stopPropagation(); toggleEmoji(emojiTrigger)" type="button" aria-label="Add Emoji" [disabled]="disabled">
         <img src="img/icons/chatarea/sentiment_satisfied.svg" class="message-input__icon" alt="Smiley">
       </button>
       <button class="message-input__btn" [class.active]="isMentionActive" (click)="$event.stopPropagation(); toggleMention()" type="button" aria-label="Mention User" [disabled]="disabled">

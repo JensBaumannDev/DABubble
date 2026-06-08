@@ -14,9 +14,11 @@ export class userService {
     
     private usersCache = new Map<string, User>();
     private usersListCache: User[] | null = null;
+    private usersListPromise: Promise<User[]> | null = null;
 
     clearCache() {
         this.usersListCache = null;
+        this.usersListPromise = null;
     }
 
     
@@ -61,12 +63,16 @@ export class userService {
 
     
     async getAllUsers(forceRefresh = false): Promise<User[]> {
-        if (this.usersListCache && !forceRefresh) return this.usersListCache;
+        if (forceRefresh) this.clearCache();
+        if (this.usersListCache) return this.usersListCache;
+        if (this.usersListPromise) return this.usersListPromise;
+        this.usersListPromise = this.fetchAllUsers().finally(() => this.usersListPromise = null);
+        return this.usersListPromise;
+    }
+
+    private async fetchAllUsers(): Promise<User[]> {
         const { data, error } = await this.supabaseSvc.supabase.from('profiles').select('*');
-        if (error) {
-            console.error('Fehler beim Laden der User:', error.message);
-            return [];
-        }
+        if (error) return console.error('Fehler beim Laden der User:', error.message), [];
         const users = (data as User[]).map((user) => this.normalizeUser(user));
         users.forEach((u) => this.usersCache.set(u.id, u));
         this.usersListCache = users;
