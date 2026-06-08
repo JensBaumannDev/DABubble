@@ -1,12 +1,14 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { supabaseService } from './supabase.service';
 import { User } from '../interfaces/user.interface';
+import { avatarService } from './avatar.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class userService {
     private supabaseSvc = inject(supabaseService);
+    private avatarSvc = inject(avatarService);
     private activeDirectChatUserSignal = signal<User | null>(null);
     readonly activeDirectChatUser = this.activeDirectChatUserSignal.asReadonly();
     
@@ -37,16 +39,22 @@ export class userService {
         this.activeDirectChatUserSignal.set(user);
     }
 
+    private normalizeUser(user: User): User {
+        const normalizedAvatar = this.avatarSvc.normalizeAvatarUrl(user.avatar_url || '');
+        return { ...user, avatar_url: normalizedAvatar || user.avatar_url };
+    }
+
     
     async upsertProfile(user: User): Promise<any> {
+        const normalizedUser = this.normalizeUser(user);
         const { data, error } = await this.supabaseSvc.supabase
             .from('profiles')
-            .upsert({ id: user.id, display_name: user.display_name, email: user.email, avatar_url: user.avatar_url, status: user.status });
+            .upsert({ id: normalizedUser.id, display_name: normalizedUser.display_name, email: normalizedUser.email, avatar_url: normalizedUser.avatar_url, status: normalizedUser.status });
         if (error) {
             console.error('Fehler beim Speichern des Profils:', error.message);
             throw error;
         }
-        this.usersCache.set(user.id, user);
+        this.usersCache.set(normalizedUser.id, normalizedUser);
         this.usersListCache = null;
         return data;
     }
@@ -59,7 +67,7 @@ export class userService {
             console.error('Fehler beim Laden der User:', error.message);
             return [];
         }
-        const users = data as User[];
+        const users = (data as User[]).map((user) => this.normalizeUser(user));
         users.forEach((u) => this.usersCache.set(u.id, u));
         this.usersListCache = users;
         return users;
@@ -78,7 +86,7 @@ export class userService {
             console.error('Fehler beim Laden des Users:', error.message);
             return null;
         }
-        const user = data as User;
+        const user = this.normalizeUser(data as User);
         this.usersCache.set(id, user);
         return user;
     }

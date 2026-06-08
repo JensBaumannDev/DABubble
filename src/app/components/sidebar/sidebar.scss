@@ -116,6 +116,29 @@
     object-fit: contain;
   }
 
+  &__new-msg-btn {
+    @include flex(row, nowrap, center, center);
+    @include button-reset;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: transparent;
+    color: $black;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background-color: $bg-color;
+    }
+  }
+
+  &__new-msg-btn-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: brightness(0) saturate(100%);
+  }
+
   &__content {
     @include scrollbar(6px, $light-purple);
     flex: 1;
