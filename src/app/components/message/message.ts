@@ -33,6 +33,8 @@ interface ReactionListItem {
   count: number;
   userReacted: boolean;
   userIds: string[];
+  tooltipNames: string;
+  tooltipAction: string;
 }
 
 @Component({
@@ -369,12 +371,54 @@ export class MessageComponent implements OnInit {
 
   private createReactionItem(emoji: string): ReactionListItem {
     const userIds = this.message.reactions?.[emoji] ?? [];
+    const tooltip = this.buildReactionTooltip(userIds);
     return {
       emoji,
       count: userIds.length,
       userReacted: userIds.includes(this.currentUserId),
       userIds,
+      tooltipNames: tooltip.names,
+      tooltipAction: tooltip.action,
     };
+  }
+
+  private buildReactionTooltip(userIds: string[]): { names: string; action: string } {
+    const names = [...new Set(userIds.map((id) => {
+      return id === this.currentUserId ? 'Du' : this.resolveReactionUserName(id);
+    }).filter(Boolean))];
+    const len = names.length;
+
+    if (len === 1) {
+      return {
+        names: names[0],
+        action: names[0] === 'Du' ? 'hast reagiert' : 'hat reagiert',
+      };
+    }
+
+    if (len === 2) {
+      return {
+        names: `${names[0]} und ${names[1]}`,
+        action: 'haben reagiert',
+      };
+    }
+
+    return {
+      names: `${names[0]}, ${names[1]} und ${len - 2} weitere Person${len === 3 ? '' : 'en'}`,
+      action: 'haben reagiert',
+    };
+  }
+
+  private resolveReactionUserName(userId: string): string {
+    if (userId === this.currentUserId) {
+      return 'Du';
+    }
+
+    if (this.message.sender?.id === userId) {
+      return this.message.sender.display_name;
+    }
+
+    const user = MessageComponent.allUsers.find((entry) => entry.id === userId);
+    return user?.display_name || 'Unbekannt';
   }
 
   private syncReactionOrder(): void {

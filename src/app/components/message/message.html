@@ -170,6 +170,17 @@
               (click)="toggleReaction(rx.emoji)"
               type="button"
             >
+              <span class="msg-container__rx-tooltip" role="tooltip">
+                <ngx-emoji
+                  class="msg-container__rx-tooltip-emoji"
+                  [emoji]="toEmojiKey(rx.emoji)"
+                  [set]="emojiSet"
+                  [size]="22"
+                  aria-hidden="true"
+                ></ngx-emoji>
+                <span class="msg-container__rx-tooltip-names">{{ rx.tooltipNames }}</span>
+                <span class="msg-container__rx-tooltip-text">{{ rx.tooltipAction }}</span>
+              </span>
               <ngx-emoji
                 class="msg-container__rx-emoji"
                 [emoji]="toEmojiKey(rx.emoji)"
