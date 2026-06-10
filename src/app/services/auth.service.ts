@@ -335,8 +335,8 @@ export class authService {
   private async clearUserState(): Promise<void> {
     await this.presenceSvc.cleanup();
     this.currentUserProfileSignal.set(null);
-    this.channelSvc.selectChannel(null);
-    this.userSvc.selectDirectChatUser(null);
+    this.channelSvc.clearState();
+    this.userSvc.clearState();
   }
 
   /**
